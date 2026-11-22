@@ -14,39 +14,18 @@ CC="${CC:-gcc}"
 "$CXX" -O2 -fno-exceptions -fno-rtti \
     -S -o hotcoffee_multi.s "$SRC"
 
-# Step 2: Fix assembly formatting
-python3 - <<'PYCODE'
-import re
-
-p = "hotcoffee_multi.s"
-
-with open(p, encoding="utf-8") as f:
-    lines = f.read().splitlines()
-
-fixed = 0
-
-for i, line in enumerate(lines):
-    if re.match(r'^\s*(call|jmp)\s+"?', line) and not line.rstrip().endswith('"'):
-        lines[i] = line.rstrip() + '"'
-        fixed += 1
-
-with open("hotcoffee_multi_fixed.s", "w", encoding="utf-8") as f:
-    f.write("\n".join(lines) + "\n")
-
-print("Quote-fixed lines:", fixed)
-PYCODE
-
-# Step 3: Link ASI
-# IMPORTANT: Do not use -nostdlib
+# Step 2: Link ASI directly
+# Do not modify GCC-generated assembly.
+# Keep standard runtime libraries enabled.
 "$CC" -O2 -shared -nostartfiles \
     -Wl,--entry,DllMain \
     -Wl,--subsystem,windows \
     -o "$OUT" \
-    hotcoffee_multi_fixed.s \
+    hotcoffee_multi.s \
     libshv.a \
     -lkernel32 -luser32
 
-# Step 4: Verify output
+# Step 3: Verify output
 if [ ! -f "$OUT" ]; then
     echo "ERROR: ASI file was not generated!"
     exit 1
