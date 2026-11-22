@@ -1,0 +1,40 @@
+name: Build HotCoffee F2 Multi
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-python
+
+      - name: Build HotCoffee ASI
+        shell: msys2 {0}
+        run: |
+          bash ./build.sh ./hotcoffee.cpp ./HotCoffee_F2.asi
+
+      - name: Check output
+        shell: pwsh
+        run: |
+          if (!(Test-Path "HotCoffee_F2.asi")) {
+            throw "HotCoffee_F2.asi was not generated!"
+          }
+
+      - name: Upload ASI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HotCoffee-F2-Multi-ASI
+          path: HotCoffee_F2.asi
